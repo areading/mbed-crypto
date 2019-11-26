@@ -214,6 +214,15 @@ mpi_copy_self:14
 Base test mbedtls_mpi_swap #1
 mbedtls_mpi_swap:0:1500
 
+Test mbedtls_mpi_grow_alloc0 #1
+mbedtls_mpi_grow_alloc0:4:4
+
+Test mbedtls_mpi_grow_alloc0 #2
+mbedtls_mpi_grow_alloc0:6:6
+
+Test mbedtls_mpi_grow_alloc0 #3
+mbedtls_mpi_grow_alloc0:33:33
+
 Test mbedtls_mpi_shrink #1
 mbedtls_mpi_shrink:2:2:4:4
 
@@ -237,6 +246,18 @@ mbedtls_mpi_shrink:4:1:0:1
 
 Test mbedtls_mpi_shrink #8
 mbedtls_mpi_shrink:4:0:0:1
+
+Test mbedtls_mpi_shrink_alloc0 #1
+mbedtls_mpi_shrink_alloc0:4:4
+
+Test mbedtls_mpi_shrink_alloc0 #2
+mbedtls_mpi_shrink_alloc0:6:6
+
+Test mbedtls_mpi_shrink_alloc0 #3
+mbedtls_mpi_shrink_alloc0:2:2
+
+Test mbedtls_mpi_shrink_alloc0 #4
+mbedtls_mpi_shrink_alloc0:33:33
 
 Test mbedtls_mpi_safe_cond_assign #1
 mbedtls_mpi_safe_cond_assign:+1:"01":+1:"02"

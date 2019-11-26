@@ -207,8 +207,8 @@ extern "C" {
 typedef struct mbedtls_mpi
 {
     int s;                /*!<  integer sign              */
-    int els;              /*!<  extenal limb storage flag */
     size_t n;             /*!<  total # of limbs          */
+    int alloc;            /*!<  heap alloc flag (bool)    */
     mbedtls_mpi_uint *p;  /*!<  pointer to limbs          */
     mbedtls_mpi_uint l[MBEDTLS_MPI_LOCAL_LIMBS]; /*!<  local limb buffer */
 }

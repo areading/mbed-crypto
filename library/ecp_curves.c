@@ -562,9 +562,10 @@ static const mbedtls_mpi_uint brainpoolP512r1_n[] = {
  */
 static inline void ecp_mpi_load( mbedtls_mpi *X, const mbedtls_mpi_uint *p, size_t len )
 {
-    X->s = 1;
-    X->n = len / sizeof( mbedtls_mpi_uint );
-    X->p = (mbedtls_mpi_uint *) p;
+    X->s   = 1;
+    X->n   = len / sizeof( mbedtls_mpi_uint );
+    X->p   = (mbedtls_mpi_uint *) p;
+    X->alloc = 0;
 }
 
 /*
@@ -573,9 +574,10 @@ static inline void ecp_mpi_load( mbedtls_mpi *X, const mbedtls_mpi_uint *p, size
 static inline void ecp_mpi_set1( mbedtls_mpi *X )
 {
     static mbedtls_mpi_uint one[] = { 1 };
-    X->s = 1;
-    X->n = 1;
-    X->p = one;
+    X->s   = 1;
+    X->n   = 1;
+    X->p   = one;
+    X->alloc = 0;
 }
 
 /*

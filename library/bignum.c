@@ -93,7 +93,7 @@ void mbedtls_mpi_init( mbedtls_mpi *X )
     X->s = 1;
     X->n = 0;
     X->p = NULL;
-    X->els = 0;
+    X->alloc = 0;
     mbedtls_platform_zeroize( X->l, sizeof(X->l) );
 }
 
@@ -107,16 +107,17 @@ void mbedtls_mpi_free( mbedtls_mpi *X )
 
     if( X->p != NULL )
     {
-        mbedtls_mpi_zeroize( X->p, X->n );
+        if( X->alloc || X->p == X->l )
+            mbedtls_mpi_zeroize( X->p, X->n );
 
-        if( X->els )
+        if( X->alloc )
             mbedtls_free( X->p );
     }
 
     X->s = 1;
     X->n = 0;
     X->p = NULL;
-    X->els = 0;
+    X->alloc = 0;
 }
 
 /*
@@ -130,14 +131,7 @@ int mbedtls_mpi_grow( mbedtls_mpi *X, size_t nblimbs )
     if( nblimbs > MBEDTLS_MPI_MAX_LIMBS )
         return( MBEDTLS_ERR_MPI_ALLOC_FAILED );
 
-    if( X->n < nblimbs && !X->els && nblimbs <= MBEDTLS_MPI_LOCAL_LIMBS )
-    {
-        mbedtls_mpi_zeroize( X->l + X->n, nblimbs - X->n );
-
-        X->p = X->l;
-        X->n = nblimbs;
-    }
-    else if( X->n < nblimbs )
+    if( X->n < nblimbs && nblimbs > MBEDTLS_MPI_LOCAL_LIMBS )
     {
         if( ( p = (mbedtls_mpi_uint*)mbedtls_calloc( nblimbs, ciL ) ) == NULL )
             return( MBEDTLS_ERR_MPI_ALLOC_FAILED );
@@ -146,7 +140,7 @@ int mbedtls_mpi_grow( mbedtls_mpi *X, size_t nblimbs )
         {
             memcpy( p, X->p, X->n * ciL );
 
-            if( X->els )
+            if( X->alloc && X->p != X->l )
             {
                 mbedtls_mpi_zeroize( X->p, X->n );
                 mbedtls_free( X->p );
@@ -159,7 +153,26 @@ int mbedtls_mpi_grow( mbedtls_mpi *X, size_t nblimbs )
 
         X->n = nblimbs;
         X->p = p;
-        X->els = 1;
+        X->alloc = 1;
+    }
+    else if( X->n < nblimbs )
+    {
+        if( X->p != NULL && X->p != X->l )
+        {
+            memcpy( X->l, X->p, X->n * ciL );
+
+            if( X->alloc )
+            {
+                mbedtls_mpi_zeroize( X->p, X->n );
+                mbedtls_free( X->p );
+            }
+	}
+
+        mbedtls_mpi_zeroize( X->l + X->n, nblimbs - X->n );
+
+        X->p = X->l;
+        X->n = nblimbs;
+        X->alloc = 0;
     }
 
     return( 0 );
@@ -190,7 +203,25 @@ int mbedtls_mpi_shrink( mbedtls_mpi *X, size_t nblimbs )
     if( i < nblimbs )
         i = nblimbs;
 
-    if( X->els )
+    if( i <= MBEDTLS_MPI_LOCAL_LIMBS )
+    {
+        if( X->p != NULL && X->p != X->l )
+        {
+            memcpy( X->l, X->p, i * ciL );
+
+            if( X->alloc )
+            {
+                mbedtls_mpi_zeroize( X->p, X->n );
+                mbedtls_free( X->p );
+            }
+        }
+
+        mbedtls_mpi_zeroize( X->l + i, MBEDTLS_MPI_LOCAL_LIMBS - i );
+
+        X->p = X->l;
+        X->alloc = 0;
+    }
+    else
     {
         if( ( p = (mbedtls_mpi_uint*)mbedtls_calloc( i, ciL ) ) == NULL )
             return( MBEDTLS_ERR_MPI_ALLOC_FAILED );
@@ -198,14 +229,17 @@ int mbedtls_mpi_shrink( mbedtls_mpi *X, size_t nblimbs )
         if( X->p != NULL )
         {
             memcpy( p, X->p, i * ciL );
-            mbedtls_mpi_zeroize( X->p, X->n );
-            mbedtls_free( X->p );
+
+            if( X->alloc )
+            {
+                mbedtls_mpi_zeroize( X->p, X->n );
+                mbedtls_free( X->p );
+            }
         }
 
         X->p = p;
+        X->alloc = 1;
     }
-    else if( i < MBEDTLS_MPI_LOCAL_LIMBS )
-        mbedtls_mpi_zeroize( X->l, MBEDTLS_MPI_LOCAL_LIMBS - i );
 
     X->n = i;
 
@@ -264,11 +298,13 @@ void mbedtls_mpi_swap( mbedtls_mpi *X, mbedtls_mpi *Y )
     MPI_VALIDATE( Y != NULL );
 
     memcpy( &T,  X, sizeof( mbedtls_mpi ) );
+    if( X->p == X->l )
+        T.p = T.l;
     memcpy(  X,  Y, sizeof( mbedtls_mpi ) );
-    memcpy(  Y, &T, sizeof( mbedtls_mpi ) );
-    if( !X->els )
+    if( Y->p == Y->l )
         X->p = X->l;
-    if( !Y->els )
+    memcpy(  Y, &T, sizeof( mbedtls_mpi ) );
+    if( T.p == T.l )
         Y->p = Y->l;
 
     mbedtls_platform_zeroize( &T, sizeof( T ) );
